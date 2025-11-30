@@ -1,0 +1,19 @@
+#!/bin/bash
+
+echo "picoCTF{local_flag}" > flag.txt
+echo "Created: flag.txt"
+
+cp ~/Templates/pwn/* .
+
+for f in *; do
+    # skip directories
+    [ -d "$f" ] && continue
+
+    # check if filename has no dot
+    if [[ "$f" != *.* ]]; then
+        chmod +x "$f"
+        echo "Made $f executable"
+    fi
+done
+
+
