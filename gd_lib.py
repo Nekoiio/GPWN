@@ -431,6 +431,29 @@ def gfmts(
 
 #! ---------------------------- General -----------------------------
 
+
+
+
+
+
+#? ------------------------------------------------------------
+#? gshellc()
+#?     Turns passed hex-encoded assembly into shellcode
+#? ------------------------------------------------------------
+# TODO: Take in pure assembly and convert it into shellcode
+def gshellc(hexs: str):
+    open('tl', 'wb').write(bytes.fromhex(hexs))
+
+
+
+
+
+
+
+
+
+
+
 #? ------------------------------------------------------------
 #? ghex_stream()
 #?     Reads, sanitizes, and converst a continuous stream of bytes
