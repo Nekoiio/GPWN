@@ -1,20 +1,23 @@
 from pwn import *
-# -----------------------------
-# Program sections for clasification
-# -----------------------------
+#? -----------------------------
+#? Program sections for clasification
+#? -----------------------------
 VMMAP = [
-    (0x555555554000, 0x555555555000, "r--p", "vuln"), ## ----------- With Pie --------------
+    # ---- existing PIE / No-PIE 64-bit maps ----
+    (0x555555554000, 0x555555555000, "r--p", "vuln"),
     (0x555555555000, 0x555555556000, "r-xp", "vuln"),
-    (0x555555556000, 0x555555557000, "r--p" , "vuln"),
+    (0x555555556000, 0x555555557000, "r--p", "vuln"),
     (0x555555557000, 0x555555558000, "r--p", "vuln"),
     (0x555555558000, 0x555555559000, "rw-p", "vuln"),
-    (0x555555559000, 0x55555557a000, "rw-p", "[heap]"), ## ---------------------------------
-    (0x400000, 0x401000, "r--p", "vuln"), # -------------- No pie -------------------
+    (0x555555559000, 0x55555557a000, "rw-p", "[heap]"),
+
+    (0x400000, 0x401000, "r--p", "vuln"),
     (0x401000, 0x402000, "r-xp", "vuln"),
     (0x402000, 0x403000, "r--p", "vuln"),
     (0x403000, 0x404000, "r--p", "vuln"),
     (0x404000, 0x405000, "rw-p", "vuln"),
-    (0x405000, 0x426000, "rw-p", "[heap]"),# -----------------------------------------
+    (0x405000, 0x426000, "rw-p", "[heap]"),
+
     (0x7ffff7dc2000, 0x7ffff7dc5000, "rw-p", "[anon]"),
     (0x7ffff7dc5000, 0x7ffff7deb000, "r--p", "libc.so.6"),
     (0x7ffff7deb000, 0x7ffff7f41000, "r-xp", "libc.so.6"),
@@ -31,13 +34,43 @@ VMMAP = [
     (0x7ffff7ffb000, 0x7ffff7ffd000, "r--p", "ld-linux-x86-64.so.2"),
     (0x7ffff7ffd000, 0x7ffff7fff000, "rw-p", "ld-linux-x86-64.so.2"),
     (0x7ffffffde000, 0x7ffffffff000, "rw-p", "[stack]"),
+
+    # -------------------- 32-bit Regions Added --------------------
+    (0x56555000, 0x56556000, "r-xp", "vuln"),
+    (0x56556000, 0x56557000, "r--p", "vuln"),
+    (0x56557000, 0x56558000, "rw-p", "vuln"),
+    (0x56558000, 0x5657a000, "rw-p", "[heap]"),
+
+    (0xf7d7d000, 0xf7d9f000, "r--p", "libc.so.6"),
+    (0xf7d9f000, 0xf7f18000, "r-xp", "libc.so.6"),
+    (0xf7f18000, 0xf7f98000, "r--p", "libc.so.6"),
+    (0xf7f98000, 0xf7f9a000, "r--p", "libc.so.6"),
+    (0xf7f9a000, 0xf7f9b000, "rw-p", "libc.so.6"),
+
+    (0xf7f9b000, 0xf7fa5000, "rw-p", "[anon_f7f9b]"),
+    (0xf7fc1000, 0xf7fc3000, "rw-p", "[anon_f7fc1]"),
+
+    (0xf7fc3000, 0xf7fc7000, "r--p", "[vvar]"),
+    (0xf7fc7000, 0xf7fc9000, "r-xp", "[vdso]"),
+
+    (0xf7fc9000, 0xf7fca000, "r--p", "ld-linux.so.2"),
+    (0xf7fca000, 0xf7fed000, "r-xp", "ld-linux.so.2"),
+    (0xf7fed000, 0xf7ffb000, "r--p", "ld-linux.so.2"),
+    (0xf7ffb000, 0xf7ffd000, "r--p", "ld-linux.so.2"),
+    (0xf7ffd000, 0xf7ffe000, "rw-p", "ld-linux.so.2"),
+
+    (0xfffdd000, 0xffffe000, "rw-p", "[stack]"),
 ]
 
 
 
-# -----------------------------
-# Color Module (ANSI escapes)
-# -----------------------------
+#! ---------------------------- FMTSTR -----------------------------
+ 
+ 
+ 
+#? -----------------------------
+#? Color Module (ANSI escapes)
+#? -----------------------------
 class C:
     RESET = "\033[0m"
     BOLD  = "\033[1m"
@@ -52,11 +85,11 @@ class C:
 
 
 
-# ------------------------------------------------------------
-# classify_addr()
-#     Given an address and vmmap entries return:
-#         section_name, (start,end)
-# ------------------------------------------------------------
+#? ------------------------------------------------------------
+#? classify_addr()
+#?     Given an address and vmmap entries return:
+#?         section_name, (start,end)
+#? ------------------------------------------------------------
 def classify_addr(addr: int, maps=VMMAP):
     for start, end, perm, obj in maps:
         if not (start <= addr < end):
@@ -104,11 +137,11 @@ def classify_addr(addr: int, maps=VMMAP):
 
 
 
-# ------------------------------------------------------------
-# process_leaks()
-#     Takes gs_lookup() results → classifies → computes offsets
-#     Dedup: only one entry per memory range
-# ------------------------------------------------------------
+#? ------------------------------------------------------------
+#? process_leaks()
+#?     Takes gs_lookup() results → classifies → computes offsets
+#?     Dedup: only one entry per memory range
+#? ------------------------------------------------------------
 def process_leaks(results, maps=VMMAP, outfile="base_offset.txt"):
     seen_ranges = set()
     offsets = []
@@ -127,14 +160,14 @@ def process_leaks(results, maps=VMMAP, outfile="base_offset.txt"):
         # Added as a result of modificating of classify_addr()
         processing = (classify_addr(ptr, maps).replace('(', '').replace(')', '').replace('-', '').split(' '))
         del processing[2]
-        print(processing)
+        #print(processing)
 
         if processing[1] == "None":
             continue
         
         processing[1] = int(processing[1], 16)
         processing[2] = int(processing[2], 16)
-        print(processing)
+        #print(processing)
 
         section, start, end = processing
 
@@ -174,17 +207,17 @@ def process_leaks(results, maps=VMMAP, outfile="base_offset.txt"):
     return offsets
 
 
-# ------------------------------------------------------------
-# gfs_off()
-#     Finds the format-string offset where your test value
-#     (AAAA or AAAAAAAA) appears in memory.
-# ------------------------------------------------------------
+#? ------------------------------------------------------------
+#? gfs_off()
+#?     Finds the format-string offset where your test value
+#?     (AAAA or AAAAAAAA) appears in memory.
+#? ------------------------------------------------------------
 def gfs_off(
     p_name: str = "./vuln",
     architecture: int = 64,
     start_line: bytes = b": \n",
     recv_line: bytes = b": ",
-    lim: int = 50,
+    lim: int = 50
 ) -> int:
 
     # Test pattern based on architecture size
@@ -221,39 +254,58 @@ def gfs_off(
 
 
 
-# ------------------------------------------------------------
-# gs_lookup()
-#     Prints all %N$p leaks from 0..lim.
-#     If 'lookup' is provided, passes leaks to hit_matcher().
-# ------------------------------------------------------------
+#? ------------------------------------------------------------
+#? gs_lookup()
+#?     Prints all %N$p leaks from 0..lim.
+#?     If 'lookup' is provided, passes leaks to hit_matcher().
+#? ------------------------------------------------------------
+# TODO Add support for multi_line
 def gs_lookup(
+    # regular inputs
     p_name: str = "./vuln",
     architecture: int = 64,
     start_line: bytes = b": \n",
     recv_line: bytes = b": ",
+
+    # Scanning limits
     lim: int = 50,
+    start: int = 1,
     spec: str = "",
-    lookup: bytes = b''
+
+    # Lookup and how many more to lookup afterwards
+    lookup: bytes = b'',
+    iter: int = 6,
+
+    # In case program has multiple attack_vectors to scan
+    multi_line: bool = False,
+    multild: bytes = b"=",
+    avectors: int = 2
+    
 ) -> None:
 
     f_spec: str = spec if spec else ("$p" if architecture == 64 else "$x")
     results: list[tuple[int, bytes, str]] = []
 
     with context.local(log_level="warn"):
-        for i in range(1, lim):
+        for i in range(start, lim):
             try:
-                tr = process(p_name)
+                if multi_line == False:
 
-                # Send %N$p format request
-                tr.sendlineafter(start_line, f"%{i}{f_spec}".encode())
-                tr.recvuntil(recv_line, timeout=0.2)
+                    tr = process(p_name)
 
-                # Capture the leak
-                leak = tr.recvline(timeout=0.2).strip()
-                tr.close()
-                # Debugging print(leak)
-                classification = "0x01" if b'nil' in leak else leak
-                results.append((i, leak, classify_addr(int(classification, 16))))
+                    # Send %N$p format request
+                    tr.sendlineafter(start_line, f"%{i}{f_spec}".encode().ljust(8, b'\x00'))
+                    tr.recvuntil(recv_line, timeout=0.2)
+
+                    # Capture the leak
+                    leak = tr.recvline(timeout=0.2).strip()
+                    tr.close()
+                    # Debugging print(leak)
+                    classification = "0x01" if b'nil' in leak else leak
+                    results.append((i, leak, classify_addr(int(classification, 16))))
+                else:
+                    tr = process(p_name)
+                    for i in range(avectors):
 
             except EOFError:
                 tr.close()
@@ -266,25 +318,26 @@ def gs_lookup(
 
     # Perform lookup matching if requested
     if lookup != b'':
-        hit_matcher(lookup, results)
+        hit_matcher(lookup, results, iter=iter)
     
     process_leaks(results)
 
 
 
-# ------------------------------------------------------------
-# hit_matcher()
-#     Attempts to match a byte sequence in stack leaks.
-#     Handles:
-#         - Big/little endian matching
-#         - Byte realignment (odd hex lengths)
-#         - Printing reconstructed ASCII interpretations
-# ------------------------------------------------------------
+#? ------------------------------------------------------------
+#? hit_matcher()
+#?     Attempts to match a byte sequence in stack leaks.
+#?     Handles:
+#?         - Big/little endian matching
+#?         - Byte realignment (odd hex lengths)
+#?         - Printing reconstructed ASCII interpretations
+#? ------------------------------------------------------------
 def hit_matcher(
     look: bytes = b"",
     results: list[tuple[int, bytes, str]] = [],
     direct: bool = False,
-    direct_ls: list[bytes] = []
+    direct_ls: list[bytes] = [],
+    iter: int = 6
 ) -> None:
 
     # Big-endian and little-endian matching patterns
@@ -294,35 +347,26 @@ def hit_matcher(
     nxt: int = 0
     little_end: list[str] = []
     big_end: list[str] = []
-
-    # ------------------------------------------------------------
-    # Indirect mode → operates on scanned %N$p outputs
-    # ------------------------------------------------------------
+    #* ------------------------------------------------------------
+    #* Indirect mode → operates on scanned %N$p outputs
+    #* ------------------------------------------------------------
     if direct == False:
 
         for idx, leak, _ in results:
+
 
             # Check if lookup appears in this leak
             if l in leak or lr in leak:
                 print(f"{C.MAGENTA}[!] Hit for lookup bytes on{C.RESET} {C.CYAN}{idx}: {leak}{C.RESET}")
                 nxt += 1
-                print("{C.BLUE}[*] Attempting re-ordering including next 3...{C.RESET}")
+                print("{C.BLUE}[*] Attempting re-ordering including next 6...{C.RESET}")
 
             # Process next few values after finding a hit
-            if 0 < nxt < 4:
+            if 0 < nxt < iter:
+                if b'nil' in leak:
+                    continue
 
-                store = leak[2:]      # drop '0x'
-                slice_len = len(store) - 1
-
-                # Fix odd number of hex digits by inserting '0'
-                if len(store) % 2 != 0:
-                    store = store[:slice_len] + b'0' + store[slice_len:]
-
-                # Convert hex → bytes → ASCII
-                try:
-                    store_ascii = bytes.fromhex(store.decode()).decode('ASCII')
-                except:
-                    store_ascii = "<non-ascii>"
+                store_ascii = gd_ascii(leak)
 
                 print(f"{C.BLUE}[+] re-ordering {nxt}:{C.RESET} {C.CYAN}{store_ascii} | {store_ascii[::-1]}{C.RESET}")
 
@@ -333,25 +377,17 @@ def hit_matcher(
 
 
 
-    # ------------------------------------------------------------
-    # Direct mode → user-specified list of hex values
-    # ------------------------------------------------------------
+    #*------------------------------------------------------------
+    #* Direct mode → user-specified list of hex values
+    #* ------------------------------------------------------------
     else:
-        print("{C.MAGENTA}[*] Invoked direct call, attempting to parse list of bytes given...{C.RESET}")
+        print(f"{C.MAGENTA}[*] Invoked direct call, attempting to parse list of bytes given...{C.RESET}")
 
         try:
             for add in direct_ls:
-                nxt += 1
+                nxt += 1 # counter
 
-                store = add[2:]
-                slice_len = len(store) - 1
-
-                # Fix odd hex nibble count
-                if len(store) % 2 != 0:
-                    store = store[:slice_len] + b'0' + store[slice_len:]
-
-                store_ascii = bytes.fromhex(store.decode()).decode('ASCII')
-                print(f"{C.BLUE}[+] re-ordering {nxt}:{C.RESET} {C.CYAN}{store_ascii} | {store_ascii[::-1]}{C.RESET}")
+                store_ascii = gd_ascii(add)
 
                 little_end.append(store_ascii[::-1])
                 big_end.append(store_ascii)
@@ -362,23 +398,174 @@ def hit_matcher(
     print(f'\n{C.BLUE}If stack is little endian:{C.RESET} {C.CYAN}{"".join(little_end)}{C.RESET}')
     print(f'\n{C.BLUE}If stack is big endian:{C.RESET} {C.CYAN}{"".join(big_end)}{C.RESET}')
 
-# ------------------------------------------------------------
-# ghex_ascii()
-#     Turns passed hex int | str to ascii
-# ------------------------------------------------------------
 
+#? ------------------------------------------------------------
+#? gfmts()
+#?     Gives sequence of format specifiers separated by a delimeter
+#? ------------------------------------------------------------
+
+def gfmts(
+    count: int,
+    specifier: str = "p",
+    delim: str = ""
+) -> str:
+
+    parts = [f"%{i}${specifier}" for i in range(1, count + 1)]
+    return delim.join(parts)
+
+
+
+
+#! ---------------------------- Heap -----------------------------
+
+#? ------------------------------------------------------------
+#? guaf_s()
+#?     Gives the aligned size of allocation for use after free
+#? ------------------------------------------------------------
+#//def guaf_s() -> int:
+
+
+
+
+
+
+#! ---------------------------- General -----------------------------
+
+#? ------------------------------------------------------------
+#? ghex_stream()
+#?     Reads, sanitizes, and converst a continuous stream of bytes
+#? ------------------------------------------------------------
+#TODO FIX THIS ITS KINDA NOT WORKING FOR 32 BIT
+def ghex_stream(hexstream: str, delim: str, end: str = 'LITTLE'):
+    """
+    Takes a long hex string (e.g., output from %n$x leaks),
+    fixes odd-length alignment,
+    splits into bytes,
+    decodes ASCII for each byte,
+    and returns both list and combined ASCII string.
+
+    Returns:
+        (list[str], str)
+    """
+
+    # -------------------------
+    # Sanitize input
+    # -------------------------
+    hexstream = hexstream.replace("0x", "").replace("(nil)", "")   # remove all 0x
+    hexstream = hexstream.strip()
+
+    # -------------------------
+    # Fix odd-length hex string
+    # -------------------------
+    hex_list = hexstream.split(delim)
+    fixed_list = []
+    for i in hex_list:
+
+        i = gd_ascii(i.lower())
+        if end.upper() == 'LITTLE':
+            fixed_list.append(i[::-1])
+        else:
+            fixed_list.append(i)
+
+    # Join to full ASCII string
+    full_ascii = "".join(fixed_list)
+
+    return full_ascii
+
+
+
+#? ------------------------------------------------------------
+#? gd_ascii():
+#?     makes  sure character is ascii and ensure
+#?     the prevention of lost data.
+#?
+#?     Fixes odd hex nibble count
+#? ------------------------------------------------------------
+
+#TODO FIX THIS TOO
+def gd_ascii(lek: bytes | str) -> str:
+    if isinstance(lek, bytes):
+        lek.decode()
+    store = lek[2:]      # drop '0x'
+    slice_len = len(store) - 1
+
+    # Fix odd number of hex digits by inserting '0'
+    if len(store) % 2 != 0:
+        store = store[:slice_len] + '0' + store[slice_len:]
+
+    store_ascii = bytes.fromhex(store).decode('ASCII', errors='replace')
+    return store_ascii
+
+
+
+
+
+#? ------------------------------------------------------------
+# // gfilter():
+#?     WIP
+#? ------------------------------------------------------------
+
+def gfilter(values: list[tuple[int, bytes, str]]) -> list[tuple[int, bytes, str]]:
+
+    scan: bytes = b'..'.join(values)
+
+    for j in range(1, len(scan), 2):
+        if scan == b'..':
+            continue
+
+        current = scan[j] + scan[j-1]
+
+        try:
+            current.decode('ascii')
+        except:
+            if j - 1 == 0: # [j:] inclusive?
+                values = values[j+1:]
+            values = values[:j-1] + values[i]
+
+
+
+
+
+#? ------------------------------------------------------------
+#? ghex_ascii()
+#?     Turns passed hex int | str to ascii
+#? ------------------------------------------------------------
+
+#TODO FIX THIS 
 def ghex_toAscii(
     conv: int | str,
     end: str = "BIG"
 ) -> str:
-    converted: str = (bytes.fromhex(hex(conv)[2:])).decode('ascii') if type(conv) == int else (bytes.fromhex(conv).decode('ascii') if '0x' not in conv else bytes.fromhex(conv[2:]).decode('ascii'))
-    reversed: str = converted[::-1]
-    return (converted if end.upper() == "BIG" else reversed)
 
-# ------------------------------------------------------------
-# cprint()
-#     Prints text in cool colors (check C class at the top for options)
-# ------------------------------------------------------------
+    if isinstance(conv, int):
+       
+        hexstr = hex(conv)[2:]
+
+    else:  
+        if conv.startswith("0x"):
+            hexstr = conv.replace('0x', '').replace('(nil)', '')
+            print(hexstr)
+        else:
+            hexstr = conv         
+
+    try:
+        converted = bytes.fromhex(hexstr).decode("ASCII", errors="replace")
+    except Exception as e:
+        cprint(f"Error: {e}", color='red')
+        converted = ""  
+
+    # -----------------------------
+    # 3. Return based on endian
+    # -----------------------------
+    if end.upper() == "BIG":
+        return converted
+    else:
+        return converted[::-1]
+
+#? ------------------------------------------------------------
+#? cprint()
+#?     Prints text in cool colors (check C class at the top for options)
+#? ------------------------------------------------------------
 
 def cprint(
     text: str,
@@ -387,3 +574,22 @@ def cprint(
     color = getattr(C, color.upper())
     reset = C.RESET
     print(f'{color}{text}{reset}')
+
+
+
+#? ------------------------------------------------------------
+#// gfms_pay()
+#?     Tryna figure out how to do this
+#? ------------------------------------------------------------
+
+"""
+def gfms_pay(
+    off:int,
+    writes: dict[int, int],
+    already_written: int = 0,
+    write_size: str = "short"
+) -> bytes:
+    return b''
+    
+    PLan to figure out how to do this
+"""
