@@ -72,16 +72,67 @@ VMMAP = [
 #? Color Module (ANSI escapes)
 #? -----------------------------
 class C:
-    RESET = "\033[0m"
-    BOLD  = "\033[1m"
+    # Reset / Style
+    RESET     = "\033[0m"
+    BOLD      = "\033[1m"
+    DIM       = "\033[2m"
+    ITALIC    = "\033[3m"
+    UNDERLINE = "\033[4m"
+    BLINK     = "\033[5m"
+    REVERSE   = "\033[7m"
+    HIDDEN    = "\033[8m"
 
-    RED     = ERROR   = "\033[31m" # Errors
-    GREEN   = SUCCESS = "\033[32m" # Success
-    YELLOW  = WARNING = "\033[33m" # Warning
-    BLUE    = INFO    = "\033[34m" # Info
-    MAGENTA = DEBUG   = "\033[35m" # Debug
-    CYAN    = DATA    = "\033[36m" # Data
-    WHITE   = CLASSIC = "\033[37m"
+    # Standard Colors (Foreground)
+    BLACK    = "\033[30m"
+    RED      = ERROR   = "\033[31m"
+    GREEN    = SUCCESS = "\033[32m"
+    YELLOW   = WARNING = "\033[33m"
+    BLUE     = INFO    = "\033[34m"
+    MAGENTA  = DEBUG   = "\033[35m"
+    CYAN     = DATA    = "\033[36m"
+    WHITE    = CLASSIC = "\033[37m"
+
+    # Bright Colors (Foreground)
+    BRIGHT_BLACK   = "\033[90m"
+    BRIGHT_RED     = "\033[91m"
+    BRIGHT_GREEN   = "\033[92m"
+    BRIGHT_YELLOW  = "\033[93m"
+    BRIGHT_BLUE    = "\033[94m"
+    BRIGHT_MAGENTA = "\033[95m"
+    BRIGHT_CYAN    = "\033[96m"
+    BRIGHT_WHITE   = "\033[97m"
+
+    # Background Colors
+    BG_BLACK   = "\033[40m"
+    BG_RED     = "\033[41m"
+    BG_GREEN   = "\033[42m"
+    BG_YELLOW  = "\033[43m"
+    BG_BLUE    = "\033[44m"
+    BG_MAGENTA = "\033[45m"
+    BG_CYAN    = "\033[46m"
+    BG_WHITE   = "\033[47m"
+
+    # Bright Backgrounds
+    BG_BRIGHT_BLACK   = "\033[100m"
+    BG_BRIGHT_RED     = "\033[101m"
+    BG_BRIGHT_GREEN   = "\033[102m"
+    BG_BRIGHT_YELLOW  = "\033[103m"
+    BG_BRIGHT_BLUE    = "\033[104m"
+    BG_BRIGHT_MAGENTA = "\033[105m"
+    BG_BRIGHT_CYAN    = "\033[106m"
+    BG_BRIGHT_WHITE   = "\033[107m"
+
+    # Funcrions just in case you want a custom color
+    
+    # (foreground)
+    @staticmethod
+    def color256(n: int) -> str:
+        return f"\033[38;5;{n}m"
+
+    # (background)
+    @staticmethod
+    def bg256(n: int) -> str:
+        return f"\033[48;5;{n}m"
 
 
 
