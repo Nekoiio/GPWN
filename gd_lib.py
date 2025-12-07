@@ -235,7 +235,7 @@ def process_leaks(results, maps=VMMAP, outfile="base_offset.txt"):
         # compute offset from section base
         offset = ptr - start
 
-        # Mark as processed
+       #  # Mark as processed
         seen_ranges.add((start, end))
 
         # store sortable entry
@@ -354,9 +354,12 @@ def gs_lookup(
                     # Debugging print(leak)
                     classification = "0x01" if b'nil' in leak else leak
                     results.append((i, leak, classify_addr(int(classification, 16))))
-                else:
-                    tr = process(p_name)
+                else: # TODO WORK HERE. ----------------------------------------------------------------------
+                    """tr = process(p_name)
                     for i in range(avectors):
+                        tr.recvuntil(multild)
+                        leak = tr.recvuntil(multild), timeout=0.2).strip()"""
+
 
             except EOFError:
                 tr.close()
